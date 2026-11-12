@@ -21,6 +21,11 @@ COSTO_MINIMO = 5000
 DESCUENTO_FRECUENTE = 0.05
 DESCUENTO_ENVIO10 = 0.10
 PASO_REDONDEO = 100
+HORA_MINIMA = 0
+HORA_MAXIMA = 23
+HORA_PICO_INICIO = 17
+HORA_PICO_FIN = 19
+RECARGO_HORA_PICO = 0.08
 
 
 # Patron Estrategia: una clase por zona, todas con el mismo metodo
@@ -46,13 +51,15 @@ ZONAS = {
 }
 
 
-def validar_entradas(peso, zona, dia):
+def validar_entradas(peso, zona, dia, hora=None):
     if peso <= 0 or peso > PESO_MAXIMO:
         raise ValueError("peso invalido")
     if zona not in ZONAS:
         raise ValueError("zona invalida")
     if dia < DIA_MINIMO or dia > DIA_MAXIMO:
         raise ValueError("dia invalido")
+    if hora is not None and (hora < HORA_MINIMA or hora > HORA_MAXIMA):
+        raise ValueError("hora invalida")
 
 
 def tarifa_base(peso):
@@ -67,6 +74,10 @@ def recargo_fin_de_semana(dia):
     if dia >= DIA_SABADO:
         return CONFIG["RECARGO_FINDE"]
     return 0
+def recargo_hora_pico(valor, hora):
+    if hora is not None and HORA_PICO_INICIO <= hora <= HORA_PICO_FIN:
+        return valor + valor * RECARGO_HORA_PICO
+    return valor
 
 
 def descuento_cliente(valor, cliente):
@@ -90,10 +101,11 @@ def redondear_a_cien(valor):
     return int((round(valor, 2) + mitad) // PASO_REDONDEO) * PASO_REDONDEO
 
 
-def calc(peso, zona, cliente, dia, cupon=None):
-    validar_entradas(peso, zona, dia)
+def calc(peso, zona, cliente, dia, cupon=None, hora=None):
+    validar_entradas(peso, zona, dia, hora)
     total = tarifa_base(peso)
     total = ZONAS[zona].aplicar(total)
+    total = recargo_hora_pico(total, hora)
     total = total + recargo_fin_de_semana(dia)
     total = descuento_cliente(total, cliente)
     total = aplicar_cupon(total, cupon)
