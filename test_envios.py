@@ -22,6 +22,7 @@ CASOS = [
     ("CP-18", 5, "urbana", "frecuente", 2, "ENVIO10", 7700),
     ("CP-19", 3, "urbana", "normal", 2, None, 6000),
     ("CP-20", 5, "rural", "vip", 5, None, 8400),
+    ("CP-21", 2, "urbana", "vip", 2, "ENVIO10", 5000),
 ]
 
 
