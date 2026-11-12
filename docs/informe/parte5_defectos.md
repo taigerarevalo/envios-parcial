@@ -66,5 +66,5 @@ Evidencia: `docs/capturas/pruebas_fallando.png`
 | Casos que fallan | 10 (45,5 %) |
 | Defectos Alta / Media / Baja | 1 / 4 / 0 |
 | Densidad de defectos | 5 defectos ÷ 42 líneas × 100 ≈ 11,9 por cada 100 líneas |
-| Cobertura de sentencias | por medir |
-| Cobertura de ramas | por medir |
+| Cobertura de sentencias | 93,1 % (27 de 29; sin cubrir las líneas 39 y 41) |
+| Cobertura de ramas | 92,3 % (24 de 26; sin cubrir `t < 5000` y `flag`) |
