@@ -51,6 +51,10 @@ python -m http.server 8000 --directory site
 
 Luego visita `http://localhost:8000`. La página no requiere instalar dependencias.
 
+Para publicarla, configura **Settings → Pages → Build and deployment → Source: GitHub Actions** en el repositorio y vuelve a ejecutar el flujo **Publish simulator to GitHub Pages** desde la pestaña **Actions**. Después de que el flujo termine correctamente, el sitio estará en:
+
+`https://taigerarevalo.github.io/envios-parcial/`
+
 ## Objetivo pedagógico
 
 Este repositorio sirve como ejemplo de:
