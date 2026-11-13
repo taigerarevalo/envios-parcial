@@ -39,6 +39,18 @@ pip install -r requirements.txt
 pytest -q
 ```
 
+## Simulador del controlador de aerogenerador
+
+La página interactiva de `site/` representa la máquina de estados del controlador mostrada en el diagrama de la entrega. Permite aplicar las señales `VB`, `VN`, `VF`, `FALLA` y `RESET`, revisar las salidas de cada estado y recorrer secuencias de ejemplo. Es una demostración independiente del módulo de cálculo de envíos.
+
+Para abrirla localmente, ejecuta desde la raíz del proyecto:
+
+```bash
+python -m http.server 8000 --directory site
+```
+
+Luego visita `http://localhost:8000`. La página no requiere instalar dependencias.
+
 ## Objetivo pedagógico
 
 Este repositorio sirve como ejemplo de:
