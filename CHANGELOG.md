@@ -31,6 +31,13 @@ y el proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 ### Agregado
 - Versión heredada de `calc` con la configuración del estudiante.
 
-[Sin publicar]: https://github.com/taigerarevalo/envios-parcial/compare/v2.0.0...HEAD
+[Sin publicar]: https://github.com/taigerarevalo/envios-parcial/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/taigerarevalo/envios-parcial/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/taigerarevalo/envios-parcial/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/taigerarevalo/envios-parcial/releases/tag/v1.0.0
+## [2.1.0] - 2026-11-11
+
+### Agregado
+- Parámetro opcional `hora` en `calc` (0 a 23). Entre las 17 y las 19, inclusive, se aplica un recargo del 8 % después del recargo por zona (R9).
+- Validación de la hora: un valor fuera de 0 a 23 lanza `ValueError`.
+- 9 casos de prueba nuevos (HP-01 a HP-09).

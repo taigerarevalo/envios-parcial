@@ -54,3 +54,31 @@ def test_cp14_dia_invalido():
 def test_cupon_inexistente_es_error():
     with pytest.raises(ValueError):
         calc(3, "urbana", "normal", 2, "PROMO5")
+
+
+# Solicitud de cambio: hora pico (17 a 19 inclusive, +8 % despues de la zona)
+# (id, peso, zona, cliente, dia, cupon, hora, esperado)
+CASOS_HORA = [
+    ("HP-01", 5, "urbana", "normal", 2, None, 17, 9700),
+    ("HP-02", 5, "urbana", "normal", 2, None, 19, 9700),
+    ("HP-03", 5, "urbana", "normal", 2, None, 16, 9000),
+    ("HP-04", 5, "urbana", "normal", 2, None, 20, 9000),
+    ("HP-05", 5, "rural", "vip", 6, None, 18, 10800),
+    ("HP-06", 5, "urbana", "normal", 2, None, 0, 9000),
+    ("HP-07", 5, "urbana", "normal", 2, None, 23, 9000),
+]
+
+
+@pytest.mark.parametrize("id_, p, z, c, d, cup, hora, esperado", CASOS_HORA)
+def test_hora_pico(id_, p, z, c, d, cup, hora, esperado):
+    assert calc(p, z, c, d, cup, hora) == esperado
+
+
+def test_hp08_hora_mayor_a_23():
+    with pytest.raises(ValueError):
+        calc(5, "urbana", "normal", 2, None, 24)
+
+
+def test_hp09_hora_negativa():
+    with pytest.raises(ValueError):
+        calc(5, "urbana", "normal", 2, None, -1)

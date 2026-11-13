@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1720">
+  <meta name="description" content="Simulador interactivo del controlador de un aerogenerador: máquina de Moore, diagrama de estados y secuencias de prueba.">
+  <title>Control del aerogenerador | Simulador de estados</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #eaf2f4;
+      --muted: #9aadb4;
+      --base: #0b1720;
+      --panel: #12232d;
+      --panel-light: #172b36;
+      --line: #2a404b;
+      --green: #67e2b1;
+      --blue: #83caff;
+      --amber: #ffc574;
+      --red: #ff8585;
+      --violet: #c3a6ff;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 82% -10%, rgba(52, 124, 112, .22), transparent 34rem),
+        var(--base);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+
+    button { font: inherit; }
+    button:focus-visible, a:focus-visible {
+      outline: 3px solid var(--blue);
+      outline-offset: 3px;
+    }
+
+    .page { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(154, 173, 180, .15);
+    }
+    .brand { display: flex; gap: 11px; align-items: center; font-weight: 720; letter-spacing: -.02em; }
+    .brand-mark {
+      width: 35px; height: 35px; display: grid; place-items: center;
+      border: 1px solid rgba(103, 226, 177, .4); border-radius: 11px;
+      color: var(--green); background: rgba(103, 226, 177, .08);
+    }
+    .brand-mark svg { width: 21px; height: 21px; }
+    .top-tag {
+      display: inline-flex; align-items: center; gap: 8px; color: var(--muted);
+      font-size: .82rem; letter-spacing: .04em;
+    }
+    .top-tag::before {
+      content: ""; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green); box-shadow: 0 0 12px rgba(103, 226, 177, .75);
+    }
+
+    .hero { padding: 62px 0 27px; }
+    .eyebrow {
+      display: flex; align-items: center; gap: 9px; color: var(--green);
+      font-size: .76rem; font-weight: 750; letter-spacing: .16em; text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 22px; height: 1px; background: currentColor; }
+    h1 {
+      max-width: 800px; margin: 13px 0 12px; font-size: clamp(2.2rem, 5.3vw, 4.25rem);
+      line-height: 1.04; letter-spacing: -.055em; font-weight: 690;
+    }
+    h1 span { color: var(--green); }
+    .hero-copy { max-width: 690px; color: #b2c2c8; font-size: 1.04rem; margin: 0; }
+    .facts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+    .fact {
+      padding: 7px 11px; border: 1px solid var(--line); border-radius: 999px;
+      color: #c2d0d5; font-size: .78rem;
+    }
+    .fact strong { color: var(--ink); font-weight: 650; }
+
+    main { padding-bottom: 58px; }
+    .section-heading {
+      display: flex; align-items: end; justify-content: space-between; gap: 18px; margin: 35px 0 14px;
+    }
+    .section-heading h2 { margin: 0; font-size: 1.14rem; letter-spacing: -.02em; }
+    .section-heading p { margin: 0; color: var(--muted); font-size: .82rem; }
+    .panel {
+      border: 1px solid var(--line); border-radius: 18px;
+      background: linear-gradient(145deg, rgba(23, 43, 54, .93), rgba(15, 31, 40, .97));
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .16);
+    }
+    .diagram-panel { overflow: hidden; }
+    .diagram-top {
+      min-height: 57px; display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 13px 20px; border-bottom: 1px solid var(--line);
+    }
+    .diagram-top strong { font-size: .9rem; }
+    .legend { display: flex; gap: 15px; flex-wrap: wrap; color: var(--muted); font-size: .72rem; }
+    .legend span { display: inline-flex; align-items: center; gap: 7px; }
+    .legend i { width: 16px; height: 2px; display: inline-block; background: #91a7af; }
+    .legend .dash { background: repeating-linear-gradient(90deg, var(--blue) 0 4px, transparent 4px 7px); }
+    .legend .dot { background: repeating-linear-gradient(90deg, var(--amber) 0 2px, transparent 2px 5px); }
+    .diagram-wrap { padding: 8px 12px 0; }
+    .diagram { width: 100%; height: auto; display: block; overflow: visible; }
+    .diagram text { font-family: inherit; user-select: none; }
+    .edge {
+      fill: none; stroke: #91a7af; stroke-width: 2;
+      vector-effect: non-scaling-stroke; transition: stroke .2s, stroke-width .2s, opacity .2s;
+    }
+    .edge.dashed { stroke: var(--blue); stroke-dasharray: 8 6; }
+    .edge.dotted { stroke: var(--amber); stroke-dasharray: 2 5; stroke-linecap: round; }
+    .edge-label { fill: #c2d0d5; font-size: 14px; text-anchor: middle; }
+    .state-node { transition: filter .2s, opacity .2s; }
+    .state-node circle {
+      fill: #12232d; stroke: #78909a; stroke-width: 2;
+      vector-effect: non-scaling-stroke; transition: fill .2s, stroke .2s, stroke-width .2s;
+    }
+    .state-id { fill: #dce8eb; font-size: 15px; font-weight: 750; text-anchor: middle; }
+    .state-name { fill: #bdcbd0; font-size: 13px; text-anchor: middle; }
+    .state-node.active circle { fill: rgba(103, 226, 177, .15); stroke: var(--green); stroke-width: 3; }
+    .state-node.active .state-id { fill: var(--green); }
+    .state-node.visited:not(.active) circle { stroke: #63877f; }
+    .edge.active { stroke: var(--green); stroke-width: 3; }
+    .edge.active.dashed { stroke: var(--blue); }
+    .edge.active.dotted { stroke: var(--amber); }
+    .diagram-caption {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      border-top: 1px solid rgba(154, 173, 180, .12); padding: 12px 20px 15px;
+      color: var(--muted); font-size: .77rem;
+    }
+    .diagram-caption strong { color: var(--ink); font-weight: 620; }
+
+    .sim-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr); gap: 15px; }
+    .sim-panel, .state-panel { padding: 21px; }
+    .panel-title {
+      display: flex; justify-content: space-between; align-items: start; gap: 12px;
+      margin-bottom: 18px;
+    }
+    .panel-title h3 { margin: 0; font-size: 1rem; }
+    .panel-title p { margin: 3px 0 0; color: var(--muted); font-size: .79rem; }
+    .step-count {
+      color: var(--muted); white-space: nowrap; border: 1px solid var(--line);
+      border-radius: 8px; padding: 4px 8px; font-size: .72rem;
+    }
+    .input-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+    .input-button {
+      min-height: 57px; border: 1px solid var(--line); border-radius: 11px;
+      color: var(--ink); background: #10212a; cursor: pointer;
+      transition: transform .15s, background .15s, border-color .15s;
+    }
+    .input-button:hover:not(:disabled) { transform: translateY(-2px); background: var(--panel-light); border-color: #57717d; }
+    .input-button:disabled { cursor: wait; opacity: .58; }
+    .input-button strong { display: block; font-size: .9rem; }
+    .input-button small { display: block; color: var(--muted); font-size: .65rem; }
+    .input-button[data-input="FALLA"] strong { color: var(--red); }
+    .input-button[data-input="RESET"] strong { color: var(--green); }
+    .message {
+      min-height: 43px; display: flex; align-items: center; gap: 9px; margin-top: 14px;
+      padding: 9px 11px; border-radius: 10px; background: rgba(131, 202, 255, .07);
+      color: #c8d8de; font-size: .78rem;
+    }
+    .message::before { content: "i"; width: 17px; height: 17px; display: grid; place-items: center; flex: 0 0 auto; border: 1px solid var(--blue); border-radius: 50%; color: var(--blue); font-size: .68rem; font-weight: 750; }
+    .message[data-type="warning"] { background: rgba(255, 197, 116, .08); }
+    .message[data-type="warning"]::before { content: "!"; color: var(--amber); border-color: var(--amber); }
+    .message[data-type="danger"] { background: rgba(255, 133, 133, .08); }
+    .message[data-type="danger"]::before { content: "!"; color: var(--red); border-color: var(--red); }
+    .demo-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+    .demo-label { color: var(--muted); font-size: .72rem; margin-right: 2px; }
+    .quiet-button, .reset-button {
+      min-height: 34px; padding: 6px 10px; border: 1px solid var(--line);
+      border-radius: 8px; background: transparent; color: #c3d1d6; font-size: .72rem; cursor: pointer;
+    }
+    .quiet-button:hover:not(:disabled), .reset-button:hover:not(:disabled) { border-color: var(--green); color: var(--green); }
+    .reset-button { margin-left: auto; }
+    .quiet-button:disabled, .reset-button:disabled { opacity: .5; cursor: wait; }
+    .current-state {
+      display: flex; align-items: center; gap: 15px; border: 1px solid rgba(103, 226, 177, .27);
+      border-radius: 13px; padding: 14px; background: rgba(103, 226, 177, .055);
+    }
+    .state-orb {
+      width: 52px; height: 52px; display: grid; place-items: center; flex: 0 0 auto;
+      border: 1px solid rgba(103, 226, 177, .55); border-radius: 50%;
+      color: var(--green); font-weight: 780; background: rgba(103, 226, 177, .1);
+    }
+    .current-state span { display: block; color: var(--muted); font-size: .69rem; text-transform: uppercase; letter-spacing: .1em; }
+    .current-state strong { display: block; margin-top: 2px; font-size: 1rem; }
+    .output-label { margin: 19px 0 7px; color: var(--muted); font-size: .73rem; text-transform: uppercase; letter-spacing: .09em; }
+    .output-card { min-height: 55px; display: flex; align-items: center; gap: 10px; color: #d9e4e7; font-size: .89rem; }
+    .output-icon { width: 31px; height: 31px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 9px; color: var(--green); font-size: .85rem; }
+    .state-panel[data-state="S4"] .output-icon { color: var(--red); border-color: rgba(255, 133, 133, .4); }
+    .state-panel[data-state="S3"] .output-icon { color: var(--amber); border-color: rgba(255, 197, 116, .4); }
+    .state-description { margin: 9px 0 0; color: var(--muted); font-size: .76rem; }
+
+    .history-panel { overflow: hidden; }
+    .history-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 19px; border-bottom: 1px solid var(--line); }
+    .history-head strong { font-size: .84rem; }
+    .history-head span { color: var(--muted); font-size: .72rem; }
+    .history-list { max-height: 205px; overflow: auto; padding: 7px 19px; }
+    .history-empty { margin: 6px 0; color: var(--muted); font-size: .78rem; }
+    .history-item {
+      display: grid; grid-template-columns: 35px 72px 1fr; gap: 10px; align-items: center;
+      padding: 9px 0; border-bottom: 1px solid rgba(154, 173, 180, .1); font-size: .76rem;
+    }
+    .history-item:last-child { border-bottom: 0; }
+    .history-index { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .history-event { color: var(--blue); font-weight: 700; }
+    .history-change { color: #d6e0e3; }
+    .history-change .arrow { color: var(--muted); padding: 0 5px; }
+    .history-change .ignored { color: var(--amber); }
+
+    .explain-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+    .explain-card { min-height: 135px; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: rgba(18, 35, 45, .72); }
+    .explain-card .code { color: var(--green); font-size: .74rem; font-weight: 760; letter-spacing: .08em; }
+    .explain-card h3 { margin: 7px 0 4px; font-size: .82rem; }
+    .explain-card p { margin: 0; color: var(--muted); font-size: .72rem; }
+    .logic-note {
+      display: flex; gap: 11px; margin-top: 13px; padding: 13px 15px;
+      border: 1px solid rgba(131, 202, 255, .2); border-radius: 12px;
+      color: #bdcbd0; background: rgba(131, 202, 255, .045); font-size: .78rem;
+    }
+    .logic-note strong { color: var(--blue); white-space: nowrap; }
+    footer { border-top: 1px solid rgba(154, 173, 180, .15); padding: 20px 0 28px; color: var(--muted); font-size: .72rem; }
+    footer .page { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+    @media (max-width: 760px) {
+      .hero { padding-top: 44px; }
+      .sim-layout { grid-template-columns: 1fr; }
+      .explain-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .explain-card:last-child { grid-column: span 2; min-height: auto; }
+      .section-heading { align-items: start; flex-direction: column; gap: 4px; }
+      .diagram-top { align-items: start; flex-direction: column; }
+    }
+    @media (max-width: 500px) {
+      .page { width: min(100% - 26px, 1120px); }
+      .topbar { min-height: 62px; }
+      .brand { font-size: .88rem; }
+      .top-tag { font-size: .68rem; }
+      .hero { padding: 38px 0 18px; }
+      .hero-copy { font-size: .92rem; }
+      .diagram-wrap { padding: 12px 4px 0; overflow-x: auto; }
+      .diagram { min-width: 620px; }
+      .diagram-caption { align-items: start; flex-direction: column; padding-inline: 14px; }
+      .sim-panel, .state-panel { padding: 15px; }
+      .input-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .input-button { min-height: 52px; }
+      .explain-grid { gap: 8px; }
+      .explain-card { padding: 11px; }
+      .logic-note { flex-direction: column; gap: 3px; }
+      .history-head { padding-inline: 13px; }
+      .history-list { padding-inline: 13px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar page">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 12 7 3M12 12l9-2M12 12l-2 10M12 12v8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="12" cy="12" r="2" fill="currentColor"/>
+        </svg>
+      </span>
+      Control de aerogenerador
+    </div>
+    <span class="top-tag">Simulador interactivo</span>
+  </header>
+
+  <section class="hero page" aria-labelledby="page-title">
+    <div class="eyebrow">Automatización · Máquina de Moore</div>
+    <h1 id="page-title">El viento cambia.<br><span>El controlador responde.</span></h1>
+    <p class="hero-copy">
+      Explora cómo el controlador de un aerogenerador pasa entre operación, frenado y falla.
+      Avanza señal por señal y observa el estado, la salida y el recorrido en el diagrama.
+    </p>
+    <div class="facts" aria-label="Resumen del modelo">
+      <span class="fact"><strong>5</strong> estados</span>
+      <span class="fact"><strong>5</strong> entradas</span>
+      <span class="fact">Salidas dependen del <strong>estado</strong></span>
+      <span class="fact">Recuperación segura</span>
+    </div>
+  </section>
+
+  <main class="page">
+    <section aria-labelledby="diagram-title">
+      <div class="section-heading">
+        <h2 id="diagram-title">Diagrama de estados</h2>
+        <p>Selecciona una entrada en el simulador para resaltar el recorrido.</p>
+      </div>
+      <div class="panel diagram-panel">
+        <div class="diagram-top">
+          <strong>Controlador del aerogenerador</strong>
+          <div class="legend" aria-label="Leyenda del diagrama">
+            <span><i></i> operación</span>
+            <span><i class="dash"></i> viento bajo</span>
+            <span><i class="dot"></i> falla</span>
+          </div>
+        </div>
+        <div class="diagram-wrap">
+          <svg class="diagram" viewBox="0 0 760 430" role="img" aria-labelledby="svg-title svg-desc">
+            <title id="svg-title">Diagrama del controlador de aerogenerador</title>
+            <desc id="svg-desc">Cinco estados conectados por transiciones ante viento bajo, normal, fuerte, falla y reinicio.</desc>
+            <defs>
+              <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path d="M0 0 8 4 0 8z" fill="#91a7af"/>
+              </marker>
+              <marker id="arrow-green" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path d="M0 0 8 4 0 8z" fill="#67e2b1"/>
+              </marker>
+              <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path d="M0 0 8 4 0 8z" fill="#83caff"/>
+              </marker>
+              <marker id="arrow-amber" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path d="M0 0 8 4 0 8z" fill="#ffc574"/>
+              </marker>
+            </defs>
+            <g aria-hidden="true">
+              <path class="edge" data-from="S0" data-to="S1" data-input="VN" d="M190 156H292" marker-end="url(#arrow)"/>
+              <text class="edge-label" x="241" y="146">VN</text>
+              <path class="edge dashed" data-from="S1" data-to="S0" data-input="VB" d="M292 194H190" marker-end="url(#arrow-blue)"/>
+              <text class="edge-label" x="241" y="216">VB</text>
+              <path class="edge" data-from="S1" data-to="S2" data-input="VN" d="M430 156H532" marker-end="url(#arrow)"/>
+              <text class="edge-label" x="481" y="146">VN</text>
+              <path class="edge dashed" data-from="S2" data-to="S0" data-input="VB" d="M600 108V42H120V108" marker-end="url(#arrow-blue)"/>
+              <text class="edge-label" x="360" y="32">VB</text>
+              <path class="edge" data-from="S0" data-to="S0" data-input="VB,VF" d="M84 118C45 75 110 52 128 103" marker-end="url(#arrow)"/>
+              <text class="edge-label" x="71" y="73">VB, VF</text>
+              <path class="edge" data-from="S2" data-to="S2" data-input="VN" d="M588 104C615 61 672 79 638 125" marker-end="url(#arrow)"/>
+              <text class="edge-label" x="665" y="78">VN</text>
+              <path class="edge dotted" data-from="S0" data-to="S4" data-input="FALLA" d="M150 201V291" marker-end="url(#arrow-amber)"/>
+              <text class="edge-label" x="190" y="252">FALLA</text>
+              <path class="edge" data-from="S1" data-to="S3" data-input="VF" d="M360 204V285" marker-end="url(#arrow)"/>
+              <text class="edge-label" x="389" y="252">VF</text>
+              <path class="edge" data-from="S2" data-to="S3" data-input="VF" d="M550 198 411 302" marker-end="url(#arrow)"/>
+              <text class="edge-label" x="488" y="257">VF</text>
+              <path class="edge dashed" data-from="S3" data-to="S0" data-input="VB,VN" d="M309 302 170 198" marker-end="url(#arrow-blue)"/>
+              <text class="edge-label" x="238" y="273">VB, VN</text>
+              <path class="edge dotted" data-from="S3" data-to="S4" data-input="FALLA" d="M290 328H190" marker-end="url(#arrow-amber)"/>
+              <text class="edge-label" x="240" y="318">FALLA</text>
+              <path class="edge" data-from="S3" data-to="S3" data-input="VF" d="M331 359C302 400 417 409 390 359" marker-end="url(#arrow)"/>
+              <text class="edge-label" x="360" y="414">VF</text>
+              <path class="edge dotted" data-from="S4" data-to="S4" data-input="VB,VN,VF,FALLA" d="M88 350C48 396 158 414 151 360" marker-end="url(#arrow-amber)"/>
+              <text class="edge-label" x="73" y="415">VB, VN, VF, FALLA</text>
+              <path class="edge" data-from="S4" data-to="S0" data-input="RESET" d="M120 285V205" marker-end="url(#arrow)"/>
+              <text class="edge-label" x="78" y="252">RESET</text>
+              <path class="edge" d="M22 156H49" marker-end="url(#arrow)"/>
+              <text class="edge-label" x="26" y="143">Inicio</text>
+            </g>
+            <g class="state-node active" data-state="S0" aria-label="Estado S0, detenido">
+              <circle cx="120" cy="156" r="52"/>
+              <text class="state-id" x="120" y="151">S0</text>
+              <text class="state-name" x="120" y="172">Detenido</text>
+            </g>
+            <g class="state-node" data-state="S1" aria-label="Estado S1, orientando">
+              <circle cx="360" cy="156" r="52"/>
+              <text class="state-id" x="360" y="151">S1</text>
+              <text class="state-name" x="360" y="172">Orientando</text>
+            </g>
+            <g class="state-node" data-state="S2" aria-label="Estado S2, generando">
+              <circle cx="600" cy="156" r="52"/>
+              <text class="state-id" x="600" y="151">S2</text>
+              <text class="state-name" x="600" y="172">Generando</text>
+            </g>
+            <g class="state-node" data-state="S4" aria-label="Estado S4, falla">
+              <circle cx="120" cy="337" r="52"/>
+              <text class="state-id" x="120" y="332">S4</text>
+              <text class="state-name" x="120" y="353">Falla</text>
+            </g>
+            <g class="state-node" data-state="S3" aria-label="Estado S3, frenado">
+              <circle cx="360" cy="337" r="52"/>
+              <text class="state-id" x="360" y="332">S3</text>
+              <text class="state-name" x="360" y="353">Frenado</text>
+            </g>
+          </svg>
+        </div>
+        <div class="diagram-caption">
+          <span><strong>Trazo:</strong> la flecha resaltada muestra el último paso.</span>
+          <span>Las entradas no dibujadas en S4 se ignoran, excepto RESET.</span>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="sim-title">
+      <div class="section-heading">
+        <h2 id="sim-title">Prueba la máquina</h2>
+        <p>Cada clic aplica una señal desde el estado actual.</p>
+      </div>
+      <div class="sim-layout">
+        <div class="panel sim-panel">
+          <div class="panel-title">
+            <div>
+              <h3>Entradas del controlador</h3>
+              <p>Elige la condición que recibe el sistema.</p>
+            </div>
+            <span class="step-count" id="step-count">0 pasos</span>
+          </div>
+          <div class="input-grid" role="group" aria-label="Señales de entrada">
+            <button class="input-button" data-input="VB" type="button" aria-label="Aplicar viento bajo">
+              <strong>VB</strong><small>Viento bajo</small>
+            </button>
+            <button class="input-button" data-input="VN" type="button" aria-label="Aplicar viento normal">
+              <strong>VN</strong><small>Viento normal</small>
+            </button>
+            <button class="input-button" data-input="VF" type="button" aria-label="Aplicar viento fuerte">
+              <strong>VF</strong><small>Viento fuerte</small>
+            </button>
+            <button class="input-button" data-input="FALLA" type="button" aria-label="Simular una falla">
+              <strong>FALLA</strong><small>Alarma detectada</small>
+            </button>
+            <button class="input-button" data-input="RESET" type="button" aria-label="Aplicar señal de reinicio">
+              <strong>RESET</strong><small>Reinicio seguro</small>
+            </button>
+          </div>
+          <div class="message" id="transition-message" role="status" aria-live="polite">
+            Listo: inicia en S0, con el aerogenerador detenido.
+          </div>
+          <div class="demo-row" aria-label="Secuencias de ejemplo">
+            <span class="demo-label">Secuencias:</span>
+            <button class="quiet-button" data-demo="normal" type="button">Operación normal</button>
+            <button class="quiet-button" data-demo="wind" type="button">Viento fuerte</button>
+            <button class="quiet-button" data-demo="failure" type="button">Falla y reinicio</button>
+            <button class="reset-button" id="clear-button" type="button">Reiniciar</button>
+          </div>
+        </div>
+
+        <aside class="panel state-panel" id="state-panel" data-state="S0" aria-labelledby="current-title">
+          <div class="panel-title">
+            <div>
+              <h3 id="current-title">Estado actual</h3>
+              <p>La máquina de Moore produce su salida desde aquí.</p>
+            </div>
+          </div>
+          <div class="current-state" aria-live="polite">
+            <div class="state-orb" id="current-code">S0</div>
+            <div>
+              <span>Estado operativo</span>
+              <strong id="current-name">Detenido</strong>
+            </div>
+          </div>
+          <div class="output-label">Salida del controlador</div>
+          <div class="output-card">
+            <span class="output-icon" aria-hidden="true" id="output-icon">●</span>
+            <strong id="current-output">Freno aplicado</strong>
+          </div>
+          <p class="state-description" id="state-description">El rotor permanece detenido hasta recibir una condición de viento normal.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section aria-labelledby="history-title">
+      <div class="section-heading">
+        <h2 id="history-title">Recorrido de la simulación</h2>
+        <p>Registro de entradas aplicadas y cambios de estado.</p>
+      </div>
+      <div class="panel history-panel">
+        <div class="history-head">
+          <strong>Historial de transiciones</strong>
+          <span>Se actualiza con cada entrada</span>
+        </div>
+        <div class="history-list" id="history-list" aria-live="polite">
+          <p class="history-empty">Todavía no hay pasos. El estado inicial es S0.</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="states-title">
+      <div class="section-heading">
+        <h2 id="states-title">¿Qué representa cada estado?</h2>
+        <p>En una máquina de Moore, la salida depende del estado actual.</p>
+      </div>
+      <div class="explain-grid">
+        <article class="explain-card">
+          <span class="code">S0 · SEGURO</span>
+          <h3>Detenido</h3>
+          <p>Freno aplicado; espera viento normal para orientar la góndola.</p>
+        </article>
+        <article class="explain-card">
+          <span class="code">S1 · ORIENTACIÓN</span>
+          <h3>Orientando</h3>
+          <p>Alinea la góndola. Con viento normal pasa a generar.</p>
+        </article>
+        <article class="explain-card">
+          <span class="code">S2 · GENERACIÓN</span>
+          <h3>Generando</h3>
+          <p>Produce energía mientras el viento se mantiene normal.</p>
+        </article>
+        <article class="explain-card">
+          <span class="code">S3 · PROTECCIÓN</span>
+          <h3>Frenado</h3>
+          <p>Aplica frenado de emergencia ante viento fuerte.</p>
+        </article>
+        <article class="explain-card">
+          <span class="code">S4 · ALERTA</span>
+          <h3>Falla</h3>
+          <p>Activa alarma y desconecta la red; RESET permite volver a S0.</p>
+        </article>
+      </div>
+      <div class="logic-note">
+        <strong>Regla de seguridad</strong>
+        <span>Una falla desde cualquier estado lleva a S4. Allí, el controlador ignora las señales de viento y solo sale de la alarma con RESET.</span>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="page">
+      <span>Simulador educativo · Controlador de aerogenerador</span>
+      <span>Modelo de estados finitos tipo Moore</span>
+    </div>
+  </footer>
+
+  <script>
+    const states = {
+      S0: {
+        name: "Detenido",
+        output: "Freno aplicado",
+        description: "El rotor permanece detenido hasta recibir una condición de viento normal.",
+        transitions: { VB: "S0", VF: "S0", VN: "S1", FALLA: "S4" }
+      },
+      S1: {
+        name: "Orientando",
+        output: "Orientación de la góndola",
+        description: "La góndola busca la dirección del viento para preparar la generación.",
+        transitions: { VB: "S0", VN: "S2", VF: "S3", FALLA: "S4" }
+      },
+      S2: {
+        name: "Generando",
+        output: "Generación de energía",
+        description: "El generador produce energía mientras el viento sea normal.",
+        transitions: { VB: "S0", VN: "S2", VF: "S3", FALLA: "S4" }
+      },
+      S3: {
+        name: "Frenado",
+        output: "Frenado de emergencia",
+        description: "El rotor se frena para proteger el equipo ante condiciones de viento fuerte.",
+        transitions: { VB: "S0", VN: "S0", VF: "S3", FALLA: "S4" }
+      },
+      S4: {
+        name: "Falla",
+        output: "Alarma y desconexión de red",
+        description: "El sistema queda bloqueado por seguridad. Solo RESET permite volver al estado inicial.",
+        transitions: { RESET: "S0" }
+      }
+    };
+
+    const inputNames = {
+      VB: "viento bajo",
+      VN: "viento normal",
+      VF: "viento fuerte",
+      FALLA: "falla",
+      RESET: "reinicio"
+    };
+    const demos = {
+      normal: ["VN", "VN", "VN", "VB"],
+      wind: ["VN", "VN", "VF", "VF", "VN"],
+      failure: ["VN", "VN", "FALLA", "VN", "RESET"]
+    };
+    const statePanel = document.getElementById("state-panel");
+    const currentCode = document.getElementById("current-code");
+    const currentName = document.getElementById("current-name");
+    const currentOutput = document.getElementById("current-output");
+    const stateDescription = document.getElementById("state-description");
+    const transitionMessage = document.getElementById("transition-message");
+    const historyList = document.getElementById("history-list");
+    const stepCount = document.getElementById("step-count");
+    let currentState = "S0";
+    let history = [];
+    let busy = false;
+
+    function render() {
+      const state = states[currentState];
+      statePanel.dataset.state = currentState;
+      currentCode.textContent = currentState;
+      currentName.textContent = state.name;
+      currentOutput.textContent = state.output;
+      stateDescription.textContent = state.description;
+      stepCount.textContent = history.length + (history.length === 1 ? " paso" : " pasos");
+
+      document.querySelectorAll(".state-node").forEach((node) => {
+        node.classList.toggle("active", node.dataset.state === currentState);
+        node.classList.toggle("visited", history.some((step) => step.to === node.dataset.state));
+      });
+
+      document.querySelectorAll(".edge[data-from]").forEach((edge) => edge.classList.remove("active"));
+      const lastStep = history[history.length - 1];
+      if (lastStep && !lastStep.ignored) {
+        const edge = [...document.querySelectorAll(".edge[data-from]")].find((item) => {
+          const inputs = item.dataset.input.split(",");
+          return item.dataset.from === lastStep.from &&
+            item.dataset.to === lastStep.to &&
+            inputs.includes(lastStep.input);
+        });
+        if (edge) edge.classList.add("active");
+      }
+
+      if (history.length === 0) {
+        historyList.innerHTML = '<p class="history-empty">Todavía no hay pasos. El estado inicial es S0.</p>';
+      } else {
+        historyList.innerHTML = history.map((step, index) => {
+          const change = step.ignored
+            ? '<span class="ignored">entrada ignorada · sigue en ' + step.from + "</span>"
+            : step.from + '<span class="arrow">→</span>' + step.to;
+          return '<div class="history-item"><span class="history-index">' +
+            String(index + 1).padStart(2, "0") + '</span><span class="history-event">' +
+            step.input + '</span><span class="history-change">' + change + "</span></div>";
+        }).join("");
+      }
+      historyList.scrollTop = historyList.scrollHeight;
+    }
+
+    function applyInput(input) {
+      const from = currentState;
+      const to = states[from].transitions[input];
+      const ignored = !to;
+      if (to) currentState = to;
+      history.push({ from, to: currentState, input, ignored });
+      if (ignored) {
+        transitionMessage.textContent = input === "RESET"
+          ? "RESET solo se acepta desde S4; en " + from + " la señal se ignora."
+          : "En S4, " + inputNames[input] + " se ignora por seguridad; sigue en S4.";
+        transitionMessage.dataset.type = "warning";
+      } else {
+        transitionMessage.textContent = inputNames[input] + ": " + from + " → " + currentState + ".";
+        transitionMessage.dataset.type = input === "FALLA" ? "danger" : "";
+      }
+      render();
+    }
+
+    function setBusy(value) {
+      busy = value;
+      document.querySelectorAll("button").forEach((button) => { button.disabled = value; });
+    }
+
+    async function runDemo(name) {
+      if (busy) return;
+      currentState = "S0";
+      history = [];
+      transitionMessage.textContent = "Iniciando secuencia de ejemplo…";
+      transitionMessage.dataset.type = "";
+      render();
+      setBusy(true);
+      for (const input of demos[name]) {
+        await new Promise((resolve) => window.setTimeout(resolve, 600));
+        applyInput(input);
+      }
+      setBusy(false);
+    }
+
+    document.querySelectorAll(".input-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (!busy) applyInput(button.dataset.input);
+      });
+    });
+    document.querySelectorAll(".quiet-button").forEach((button) => {
+      button.addEventListener("click", () => runDemo(button.dataset.demo));
+    });
+    document.getElementById("clear-button").addEventListener("click", () => {
+      currentState = "S0";
+      history = [];
+      transitionMessage.textContent = "Simulación reiniciada. Estado inicial: S0.";
+      transitionMessage.dataset.type = "";
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>

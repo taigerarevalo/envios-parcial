@@ -1,71 +1,39 @@
-# Parte 5 · Automatización, ejecución y defectos
+# Parte 5 - Defectos
 
-## Ejecución contra el código heredado (v1.0.0)
+## 1. Diagnóstico inicial
+La versión heredada del código presentaba varios defectos de validación y lógica de cálculo. El objetivo del análisis fue detectar fallas antes de refactorizar y confirmar que cada una quedaba corregida por la suite final.
 
-Resultado: 22 casos, **10 fallidos y 12 aprobados**.
-Evidencia: `docs/capturas/pruebas_fallando.png`
+## 2. Defectos identificados
 
-## Reporte de defectos
+### DEF-01: no se cobraba recargo el sábado
+- Requisito afectado: R5.
+- Caso reproducible: `calc(3, "urbana", "normal", 6)`.
+- Error: la condición solo contemplaba el domingo y no sabado.
+- Impacto: el cobro del envío era menor al esperado.
 
-### DEF-01 · No se cobra el recargo de fin de semana el sábado
-- **Requisito que incumple:** R5
-- **Pasos para reproducir:** `calc(3, "urbana", "normal", 6)`
-- **Resultado esperado:** 8.000
-- **Resultado obtenido:** 6.000
-- **Severidad:** Alta. Se cobra $2.000 menos en todos los envíos del sábado.
-- **Prioridad:** Alta. Hay pérdida de dinero en cada envío afectado.
-- **Causa:** la condición `d > 6` solo incluye el domingo.
-- **Casos que lo detectan:** CP-01, CP-03
+### DEF-02: el redondeo truncaba los valores
+- Requisito afectado: R8.
+- Error: el cálculo descartaba los decimales en vez de redondear al valor más cercano de $100.
+- Impacto: los montos siempre quedaban por debajo del valor correcto.
 
-### DEF-02 · El redondeo trunca en vez de redondear al $100 más cercano
-- **Requisito que incumple:** R8
-- **Pasos para reproducir:** `calc(5, "urbana", "frecuente", 2)`
-- **Resultado esperado:** 8.600
-- **Resultado obtenido:** 8.500
-- **Severidad:** Media. El error es de hasta $99 por envío.
-- **Prioridad:** Alta. Afecta a casi todos los cálculos.
-- **Causa:** `int(t / 100) * 100` descarta los decimales.
-- **Casos que lo detectan:** CP-01, CP-02, CP-06, CP-15, CP-17, CP-18
+### DEF-03: cupones inexistentes se ignoraban
+- Requisito afectado: R7.
+- Error: si el cupón no era válido, el sistema calculaba igual sin error.
+- Impacto: se aceptaban descuentos inexistentes.
 
-### DEF-03 · Un cupón inexistente se ignora en vez de lanzar error
-- **Requisito que incumple:** R7
-- **Pasos para reproducir:** `calc(3, "urbana", "normal", 2, "PROMO5")`
-- **Resultado esperado:** ValueError
-- **Resultado obtenido:** calcula sin error
-- **Severidad:** Media. El cliente cree que tiene un descuento que no existe.
-- **Prioridad:** Media.
-- **Causa:** el `if cup == "ENVIO10"` no tiene un `else` que lance el error.
-- **Casos que lo detectan:** `test_cupon_inexistente_es_error`
+### DEF-04: la zona no se validaba
+- Requisito afectado: R2.
+- Error: cualquier valor de zona era aceptado.
+- Impacto: se podía cotizar un envío a una zona no soportada.
 
-### DEF-04 · No se valida la zona
-- **Requisito que incumple:** R2
-- **Pasos para reproducir:** `calc(5, "aerea", "normal", 2)`
-- **Resultado esperado:** ValueError
-- **Resultado obtenido:** calcula sin error
-- **Severidad:** Media. Se cotiza un envío a una zona que no existe.
-- **Prioridad:** Media.
-- **Causa:** la cadena `if/elif` de zonas no tiene `else`.
-- **Casos que lo detectan:** CP-13
+### DEF-05: el día no se validaba
+- Requisito afectado: R2.
+- Error: días fuera del rango 1 a 7 se aceptaban.
+- Impacto: se podía calcular un envío con un día no válido.
 
-### DEF-05 · No se valida el día
-- **Requisito que incumple:** R2
-- **Pasos para reproducir:** `calc(5, "urbana", "normal", 8)`
-- **Resultado esperado:** ValueError
-- **Resultado obtenido:** calcula sin error (y cobra recargo de fin de semana)
-- **Severidad:** Media.
-- **Prioridad:** Media.
-- **Causa:** no hay validación del rango 1 a 7.
-- **Casos que lo detectan:** CP-14
+## 3. Evidencia de ejecución
+La suite heredada fallaba en 10 de 22 casos. Tras la refactorización, se corrigieron esos defectos y la suite quedó estable con 32 casos aprobados.
 
-## Métricas
-
-| Métrica | Valor |
-|---|---|
-| Casos ejecutados | 22 |
-| Casos que pasan | 12 (54,5 %) |
-| Casos que fallan | 10 (45,5 %) |
-| Defectos Alta / Media / Baja | 1 / 4 / 0 |
-| Densidad de defectos | 5 defectos ÷ 42 líneas × 100 ≈ 11,9 por cada 100 líneas |
-| Cobertura de sentencias | 93,1 % (27 de 29; sin cubrir las líneas 39 y 41) |
-| Cobertura de ramas | 92,3 % (24 de 26; sin cubrir `t < 5000` y `flag`) |
+## 4. Conclusión
+La detección de defectos permitió corregir errores reales de negocio y mejorar la confiabilidad del cálculo del envío. La solución final incorpora validaciones formales, testeo automatizado y cobertura completa.
 
